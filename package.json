@@ -1,0 +1,22 @@
+{
+    "name": "helloworld",
+    "description": "Simple hello world sample in Node",
+    "version": "1.0.0",
+    "private": true,
+    "main": "server/main.js",
+    "type": "module",
+    "scripts": {
+        "start": "node server/main.js"
+    },
+    "engines": {
+        "node": ">=12.0.0"
+    },
+    "author": "Google LLC",
+    "license": "Apache-2.0",
+    "dependencies": {
+        "express": "^4.18.1",
+        "express-ws": "^5.0.2",
+        "ws": "^8.8.0"
+    }
+}
+
