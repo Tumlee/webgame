@@ -17,6 +17,7 @@ jobs:
       - run:
           name: "Say hello"
           command: "echo Hello, World!"
+          
   run-server:
     docker:
       - image: cimg/base:stable
@@ -33,3 +34,7 @@ workflows:
   say-hello-workflow:
     jobs:
       - say-hello
+  
+  run-server-workflow:
+    jobs:
+      - run-server
