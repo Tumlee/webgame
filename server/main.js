@@ -1,7 +1,32 @@
 import express from 'express';
 import expressWs from 'express-ws';
+import * as pg from 'pg';
 //import WebSocket, {WebSocketServer} from 'ws';
 //import https from 'https';
+
+//Database shit.
+
+console.log({pg});
+let Client = pg.default.Client;
+
+const client = new Client({
+  connectionString: process.env.DATABASE_URL,
+  /*ssl: {
+    rejectUnauthorized: false
+  }*/
+});
+
+client.connect();
+
+client.query('SELECT table_schema,table_name FROM information_schema.tables;', (err, res) => {
+    console.log({res});
+  if (err) throw err;
+  for (let row of res.rows) {
+    console.log(JSON.stringify(row));
+  }
+  client.end();
+});
+//--------------
 
 const app = express();
 let wsInstance = expressWs(app);
