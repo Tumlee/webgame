@@ -1,4 +1,4 @@
-import * as WebSocket from 'ws';
+//import * as WebSocket from 'ws';
 
 //The purpose of this wsclient object is to contain an asynchronous way of processing
 //messages from, and sending messages to, the web socket server, regardless of any
@@ -110,8 +110,8 @@ export class WsClient {
                 //this.logger.info('Connection established', {event});
                 this.isConnected = true;
 
-                if(functions.onMessage())
-                    this.incomingMessageHandler = onMessage;
+                if(functions.onMessage)
+                    this.incomingMessageHandler = functions.onMessage;
 
                 resolve(event);
             }

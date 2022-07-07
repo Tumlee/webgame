@@ -1,11 +1,11 @@
-import { WsClient } from "./ws-client";
+import { WsClient } from "./ws-client.js";
 
 //Built on top of the WsClient library, this has special functions specific
 //to this game, including appending timestamps and sequence numbers to the requets,
 //handling call/response, sending and acknowledging pings, and 
 export class WsHandler {
     constructor() {
-        this.sequenceNumber = 0;
+        this.sequenceId = 0;
         this.wsClient = new WsClient();
         this.pendingRequests = {};
         this.pingInterval = null;
@@ -46,13 +46,19 @@ export class WsHandler {
             return;
 
         let functions = {
-            onMessage: event => {
-                console.log({receivedMessage: event});
+            onMessage: messageEvent => {
+                try {
+                    let messageStr = messageEvent.data;
+                    this.handleMessage(JSON.parse(messageStr));
+                } catch(handleMessageError) {
+                    console.log({handleMessageError}, {messageStr});
+                }
             },
             onError: event => {
                 console.log({wsError: event});
             },
             onClose: event => {
+                console.log('Connection closed, retrying...');
                 this.cancelPingInterval();
                 this.cancelTimeoutInterval();
                 this.openConnection(uri, connectionFunction);
@@ -69,27 +75,30 @@ export class WsHandler {
         let packet = {
             type: type,
             timestamp: Date.now(),
-            sequenceNumber: this.sequenceNumber,
+            sequenceId: this.sequenceId,
             data: messageData
         };
 
+        console.log('SENDING', {packet});
+
         //Increment the sequence number.
-        this.sequenceNumber = this.sequenceNumber + 1;
+        this.sequenceId = this.sequenceId + 1;
         this.wsClient.sendMessage(JSON.stringify(packet));
     }
 
     sendRequest(type, messageData) {
         return new Promise((resolve, reject) => {
-            let seqNum = this.sequenceNumber;
+            this.sendMessage(type, messageData);
+            let seqId = this.sequenceId;
 
-            this.pendingRequests[seqNum] = responseData => {
-                delete this.pendingRequests[seqNum];
+            this.pendingRequests[seqId] = responseData => {
+                delete this.pendingRequests[seqId];
                 resolve(responseData);
             };
 
             setTimeout(() => {
-                if(this.pendingRequests[seqNum] != null) {
-                    console.log(`Warning! Response timed out for request ${seqNum}`, messageData);
+                if(this.pendingRequests[seqId] != null) {
+                    console.log(`Warning! Response timed out for request ${seqId}`, messageData);
                     delete this.pendingRequests[seqNum];
                     reject();
                 }
@@ -98,24 +107,31 @@ export class WsHandler {
     }
 
     handleMessage(wrappedMessage) {
+        console.log('RECEIVED', {wrappedMessage});
         let type = wrappedMessage.type;
         let timestamp = wrappedMessage.timestamp;
         let responseId = wrappedMessage.responseId;
         let messageData = wrappedMessage.data;
+        let seqId = wrappedMessage.seqId;
 
-        if(responseId && this.pendingRequests[responseId]) {
-            this.pendingRequests[responseId](messageData);
-            return;
+        if(responseId) {
+            let callback = this.pendingRequets[responseId];
+
+            if(callback) {
+                callback(messageData);
+            } else {
+                console.log(`Warning! Received response for ${responseID} but it's not in the pending requests list.`);
+            }
+        } else {
+            let messageHandler = this.messageHandlers[type];
+
+            if(messageHandler == null) {
+                console.log(`No message handler for message type: ${type}`);
+                return;
+            }
+      
+            messageHandler(messageData, responseData => this.sendMessage(`${type}-response`, responseData, seqId));
         }
-
-        let messageHandler = this.messageHandlers[type];
-
-        if(messageHandler == null) {
-            console.log(`No message handler for message type: ${type}`);
-            return;
-        }
-
-        messageHandler(messageData);
     }
 
     sendPing() {

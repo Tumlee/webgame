@@ -1,3 +1,5 @@
+import { WsHandler } from './lib/ws-handler.js';
+
 let adjectives = [
     'cloudy',
     'strong',
@@ -43,12 +45,14 @@ document.addEventListener("DOMContentLoaded", event => {
 
     connectButton.addEventListener('click', event => {
         try {
-            var ws = new WebSocket(loginWssBox.value);
+            //var ws = new WebSocket(loginWssBox.value);
+            let handler = new WsHandler();
+            handler.openConnection(loginWssBox.value, () => console.log('CONNECTED!!'));
         } catch(error) {
             console.log({error});
         }
 
-        let sendJson = message => ws.send(JSON.stringify(message));
+        /*let sendJson = message => ws.send(JSON.stringify(message));
         ws.onopen = event => {
             console.log('open', {event});
             let connectionName = loginNameBox.value;
@@ -94,6 +98,6 @@ document.addEventListener("DOMContentLoaded", event => {
 
         ws.onerror = event => {
             console.log('error', {event});
-        };
+        };*/
     });
 });
