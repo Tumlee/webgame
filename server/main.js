@@ -28,8 +28,6 @@ client.query('SELECT table_schema,table_name FROM information_schema.tables;', (
 const app = express();
 let wsInstance = expressWs(app);
 
-//var clientsById = {};
-
 var logMessages = [];
 
 function log(message) {
@@ -46,11 +44,23 @@ function log(message) {
 }
 
 let trafficController = new TrafficController();
+let nameByClientId = {};
+
+const messageHandlers = {
+    'identify': (clientId, messageData) => {
+        nameByClientId[clientId] = messageData.name;
+        trafficController.broadcast('connection-notice', {name: messageData.name});
+    },
+    'chat-message': (clientId, messageData) => {
+        let name = nameByClientId[clientId] ?? 'Unknown Client';
+        trafficController.broadcast('chat-message', {name: name, text: messageData.text});
+    }
+}
 
 //Set up the websocket connection.
 app.ws('/', (ws, req) => {
     try {
-        trafficController.registerClient(ws, req);
+        trafficController.registerClient(ws, req, messageHandlers);
     } catch(error) {
         console.log({error});
     }
@@ -63,5 +73,5 @@ app.use(express.static('client'));
 const port = parseInt(process.env.PORT) || 8080;
 
 app.listen(port, () => {
-    console.log(`helloworld: listening on port ${port}`);
+    console.log(`http://localhost:${port}`);
 });

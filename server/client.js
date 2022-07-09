@@ -26,7 +26,7 @@ export class Client {
     //Handling of the timeout interval.
     resetTimeoutInterval() {
         this.cancelTimeoutInterval();
-        this.timeoutInterval = setTimeout(() => handleTimeout(), 10000);
+        this.timeoutInterval = setTimeout(() => this.handleTimeout(), 10000);
     }
 
     cancelTimeoutInterval() {
@@ -39,7 +39,7 @@ export class Client {
     //Handling of the the ping interval.
     resetPingInterval() {
         this.cancelPingInterval();
-        this.pingInterval = setInterval(() => this.sendPing(), 2000);
+        this.pingInterval = setInterval(() => this.sendPing(), 2500);
     }
 
     cancelPingInterval() {
@@ -78,7 +78,9 @@ export class Client {
         if(responseId != null)
             packet.responseId = responseId;
 
-        console.log(`Sending to (${this.clientId})`, {packet});
+        if(type != 'ping')
+            console.log(`Sending to (${this.clientId})`, {packet});
+
         this.ws.send(JSON.stringify(packet));
         this.sequenceId = this.sequenceId + 1;
     }
@@ -104,13 +106,14 @@ export class Client {
     }
 
     handleMessage(wrappedMessage) {
-        console.log(`Recieved from (${this.clientId})`, {wrappedMessage});
-
         let type = wrappedMessage.type;
         let timestamp = wrappedMessage.timestamp;
         let responseId = wrappedMessage.responseId;
         let messageData = wrappedMessage.data;
         let seqId = wrappedMessage.seqId;
+
+        if(type != 'ping')
+            console.log(`Recieved from (${this.clientId})`, {wrappedMessage});
 
         if(responseId) {
             let callback = this.pendingRequets[responseId];
@@ -134,5 +137,13 @@ export class Client {
 
     sendPing() {
         this.sendMessage('ping', {});
+    }
+
+    handleTimeout() {
+        console.log(`Client with ID (${this.clientId}) seems to have timed out.`);
+    }
+
+    setMessageHandler(id, func) {
+        this.messageHandlers[id] = func;
     }
 }

@@ -5,13 +5,18 @@ export class TrafficController {
         this.clients = {};
     }
 
-    registerClient(ws, req) {
+    registerClient(ws, req, messageHandlers) {
         let clientId = req.headers['sec-websocket-key'];
 
         if(this.clients[clientId] == null)
             this.clients[clientId] = new Client(clientId, ws);
         else
             this.clients[clientId].handleConnect();
+
+        for(const handlerId of Object.keys(messageHandlers ?? {})) {
+            let handlerFunc = messageHandlers[handlerId];
+            this.clients[clientId].setMessageHandler(handlerId, messageData => handlerFunc(clientId, messageData));
+        }
     }
 
     getAllClients() {
@@ -22,7 +27,7 @@ export class TrafficController {
         return this.getAllClients().filter(client => client.isConnected);
     }
 
-    broadcast(messageData) {
-        this.getConnectedClients().forEach(client => client.sendMessage(messageData));
+    broadcast(type, messageData) {
+        this.getConnectedClients().forEach(client => client.sendMessage(type, messageData));
     }
 }

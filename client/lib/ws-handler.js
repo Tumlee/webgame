@@ -4,7 +4,8 @@ import { WsClient } from "./ws-client.js";
 //to this game, including appending timestamps and sequence numbers to the requets,
 //handling call/response, sending and acknowledging pings, and 
 export class WsHandler {
-    constructor() {
+    constructor(address) {
+        this.address = address;
         this.sequenceId = 0;
         this.wsClient = new WsClient();
         this.pendingRequests = {};
@@ -41,7 +42,11 @@ export class WsHandler {
         this.pingInterval = setInterval(() => this.sendPing(), 2500);
     }
 
-    openConnection(uri, connectionFunction) {
+    isConnected() {
+        return this.wsClient.isConnected;
+    }
+
+    openConnection(connectionFunction) {
         if(this.wsClient.isConnected)
             return;
 
@@ -61,11 +66,11 @@ export class WsHandler {
                 console.log('Connection closed, retrying...');
                 this.cancelPingInterval();
                 this.cancelTimeoutInterval();
-                this.openConnection(uri, connectionFunction);
+                this.openConnection(this.address, connectionFunction);
             }
         };
 
-        return this.wsClient.openConnection(uri, functions).then(connectionEvent => {
+        return this.wsClient.openConnection(this.address, functions).then(connectionEvent => {
             this.resetPingInterval();
             this.resetTimeoutInterval();
         }).then(connectionFunction);
@@ -140,5 +145,9 @@ export class WsHandler {
 
     handleTimeout() {
         console.log('Connection to server appears to be timed out...');
+    }
+
+    setMessageHandler(handlerId, func) {
+        this.messageHandlers[handlerId] = func;
     }
 }
