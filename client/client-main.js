@@ -45,15 +45,16 @@ function clientMain() {
         gameConsole.info('To automatically connect every time the page loads, type /autoconnect [name]');
     }
 
-    //let connectionName = localStorage.getItem('last-connected-name') ?? '';
     let mainElement = id => document.getElementById(id);
-
     let mainWindow = mainElement('mainWindow');
-    let canvasElement = mainElement('glCanvas');
-    mainWindow.appendChild(gameConsole.getContainer());
 
     //Set up the renderer.
-    let renderer = new Renderer(canvasElement);
+    let renderer = new Renderer(gameConsole);
+
+    mainWindow.appendChild(renderer.getCanvas());
+    mainWindow.appendChild(gameConsole.getContainer());
+
+    renderer.init().then(() => renderer.render());
 }
 
 function randomElement(array) {
@@ -65,7 +66,7 @@ function getLocalVar(varName) {
 }
 
 function setLocalVar(varName, value) {
-    localStorage.setItem(`webgame-${varName}`);
+    localStorage.setItem(`webgame-${varName}`, value);
 }
 
 function splitArgs(input) {

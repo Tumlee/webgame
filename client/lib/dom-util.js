@@ -37,6 +37,14 @@ export function newElement(type, info) {
         if(info.type != null) {
             el.type = info.type;
         }
+
+        if(info.width != null) {
+            el.width = info.width; 
+        }
+
+        if(info.height != null) {
+            el.height = info.height;
+        }
     }
 
     return el;

@@ -40,6 +40,8 @@ export class GameConsole {
     }
 
     log(messageType, messageData) {
+        let messageText = this.transformMessageData(messageData);
+
         let now = new Date();
         let seconds = now.getSeconds();
         let minutes = now.getMinutes();
@@ -52,7 +54,7 @@ export class GameConsole {
         let newRow = newElement('tr', {class: `console-message-${messageType}`});
         let timestampContainer = newElement('div', {class: 'console-timestamp-container', text: timestampText});
         let timestampCell = newElement('td', {class: `console-timestamp`});
-        let messagePre = newElement('pre', {text: messageData});
+        let messagePre = newElement('pre', {text: messageText});
         let messageCell = newElement('td', {class: `console-message-text`});
 
         setChildren(messageCell, [messagePre]);
@@ -79,5 +81,27 @@ export class GameConsole {
 
     setInputCallback(callback) {
         this.inputCallback = callback;
+    }
+
+    transformMessageData(messageData) {
+        console.log({messageData});
+
+        if(typeof messageData === 'string')
+            return messageData;
+
+        if(messageData instanceof Error) {
+            let indentedStack = messageData.stack.split('\n')
+                .filter(line => line.length != 0)
+                .map(line => `    ${line}`)
+                .join('\n');
+
+            return `${messageData.message}\n${indentedStack}`;
+        }
+
+        if(messageData instanceof Object) {
+            return JSON.stringify(messageData, null, 2);
+        }
+
+        return '(Unknown data)';
     }
 }

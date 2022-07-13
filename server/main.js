@@ -2,6 +2,7 @@ import express from 'express';
 import expressWs from 'express-ws';
 import * as pg from 'pg';
 import { TrafficController } from './traffic-controller.js';
+import { catalogDirectory } from './util/file-util.js';
 //import WebSocket, {WebSocketServer} from 'ws';
 //import https from 'https';
 
@@ -68,6 +69,11 @@ app.ws('/', (ws, req) => {
 
 //Set up the server to use static files from the 'client' directory.
 app.use(express.static('client'));
+
+app.get('/shaders', (req, res) => {
+    let data = catalogDirectory('client/renderer/shaders', 'glsl');
+    res.send(JSON.stringify(data));
+});
 
 //Set up the app to listen on port 8080.
 const port = parseInt(process.env.PORT) || 8080;
