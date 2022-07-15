@@ -1,14 +1,43 @@
+import { Camera } from './camera.js';
+import { GameMap } from './game-map.js';
 import { GameConsole } from './lib/game-console.js';
 import { WsHandler } from './lib/ws-handler.js';
 import { Renderer } from './renderer/renderer.js';
+
+const canvasWidth = 800;
+const canvasHeight = 600;
+
+function requestInitialMap(wsHandler) {
+    let map = new GameMap();
+
+    return wsHandler.sendRequest('map', {}).then(response => {
+        for(const tile of Object.values(response.tiles)) {
+            map.setTile(tile.c, tile.r, tile.h, tile.color);
+        }
+
+        return map;
+    });
+}
+
+function hexToRgb(hex) {
+    var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+      r: parseInt(result[1], 16) / 255.0,
+      g: parseInt(result[2], 16) / 255.0,
+      b: parseInt(result[3], 16) / 255.0
+    } : null;
+  }
 
 function clientMain() {
     //Set up the Websocket handler.
     let wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
     let wsAddress = `${wsProtocol}//${window.location.hostname}:${location.port}/`;
     let handler = new WsHandler(wsAddress);
-
     let gameConsole = new GameConsole();
+    //let gameMap = new GameMap();
+    let camera = new Camera(canvasWidth, canvasHeight);
+
+    camera.precomputeRenderingVars();
 
     handler.setMessageHandler('connection-notice', data => {
         gameConsole.info(`${data.name} has connected to the server.`);
@@ -49,12 +78,51 @@ function clientMain() {
     let mainWindow = mainElement('mainWindow');
 
     //Set up the renderer.
-    let renderer = new Renderer(gameConsole);
+    let renderer = new Renderer(gameConsole, canvasWidth, canvasHeight);
+    let basicStep = null;
 
     mainWindow.appendChild(renderer.getCanvas());
     mainWindow.appendChild(gameConsole.getContainer());
 
-    renderer.init().then(() => renderer.render());
+    requestInitialMap(handler).then(gameMap => {
+        handler.setMessageHandler('color-tile', messageData => {
+            let tile = gameMap.tiles[messageData.tileId];
+            tile.color = messageData.color;
+            gameConsole.info(`${messageData.name} colored tile (${tile.c}, ${tile.r})`);
+            gameMap.draw(basicStep, camera);
+            renderer.render();
+        });
+
+        renderer.getCanvas().addEventListener('click', event => {
+            let mousePos = getMousePos(renderer.getCanvas(), event);
+            let transformedMousePos = {
+                x: (mousePos.x * 2) - 1,
+                y: 1 - (mousePos.y * 2),
+            };
+    
+            let result = gameMap.detectClick(transformedMousePos);
+    
+            if(result && result.subId == 'floor') {
+                let color = hexToRgb(gameConsole.getColor());
+                handler.sendMessage('color-tile', {tileId: result.id, color: color});
+                //gameMap.tiles[result.id].color = color;
+                //gameMap.draw(basicStep, camera);
+                //renderer.render();
+            }
+        });
+    
+        renderer.init().then(() => {
+            basicStep = renderer.addRenderingStep('basic');
+    
+            handler.sendRequest('map', {}).then(response => {
+                console.log({response});
+            });
+        
+            gameMap.draw(basicStep, camera);
+            basicStep.pendingUniforms.uColor = [1, 1, 1, 1];
+            renderer.render();
+        }).catch(error => gameConsole.error(error));
+    });
 }
 
 function randomElement(array) {
@@ -89,6 +157,14 @@ function splitArgs(input) {
 	} while (match != null);
 
 	return finalArray;
+}
+
+function getMousePos(canvas, evt) {
+    var rect = canvas.getBoundingClientRect();
+    return {
+        x: (evt.clientX - rect.left) / (rect.right - rect.left),
+        y: (evt.clientY - rect.top) / (rect.bottom - rect.top)
+    };
 }
 
 function handleConsoleCommand(gameConsole, wsHandler, text) {

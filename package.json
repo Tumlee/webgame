@@ -3,10 +3,10 @@
     "description": "Simple hello world sample in Node",
     "version": "1.0.0",
     "private": true,
-    "main": "server/main.js",
+    "main": "source/server/main.js",
     "type": "module",
     "scripts": {
-        "start": "node server/main.js"
+        "start": "node source/server/main.js"
     },
     "engines": {
         "node": ">=12.0.0"

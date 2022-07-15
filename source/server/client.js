@@ -110,7 +110,7 @@ export class Client {
         let timestamp = wrappedMessage.timestamp;
         let responseId = wrappedMessage.responseId;
         let messageData = wrappedMessage.data;
-        let seqId = wrappedMessage.seqId;
+        let seqId = wrappedMessage.sequenceId;
 
         if(type != 'ping')
             console.log(`Recieved from (${this.clientId})`, {wrappedMessage});

@@ -15,7 +15,7 @@ export class TrafficController {
 
         for(const handlerId of Object.keys(messageHandlers ?? {})) {
             let handlerFunc = messageHandlers[handlerId];
-            this.clients[clientId].setMessageHandler(handlerId, messageData => handlerFunc(clientId, messageData));
+            this.clients[clientId].setMessageHandler(handlerId, (messageData, responder) => handlerFunc(clientId, messageData, responder));
         }
     }
 

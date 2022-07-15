@@ -1,6 +1,7 @@
 import express from 'express';
 import expressWs from 'express-ws';
 import * as pg from 'pg';
+import { GameMap } from './game-map.js';
 import { TrafficController } from './traffic-controller.js';
 import { catalogDirectory } from './util/file-util.js';
 //import WebSocket, {WebSocketServer} from 'ws';
@@ -29,23 +30,21 @@ client.query('SELECT table_schema,table_name FROM information_schema.tables;', (
 const app = express();
 let wsInstance = expressWs(app);
 
-var logMessages = [];
-
-function log(message) {
-    console.log(message);
-    let messageObject = {
-        timestamp: Date.now(),
-        message: message,
-    };
-
-    while(logMessages.length > 100)
-        logMessages.shift();
-
-    logMessages.push(messageObject);
-}
-
 let trafficController = new TrafficController();
+let gameMap = new GameMap();
 let nameByClientId = {};
+
+for(let x = -4; x < 2; x += 1) {
+    for(let z = -4; z < 2; z += 1) {
+        let color = {
+            r: (x % 2) ? .5 : 1,
+            g: (z % 2) ? .5 : 1,
+            b: ((x + z) % 2) ? .5 : 1,
+        };
+
+        gameMap.setTile(x, z, z + x + 10, color);
+    }
+}
 
 const messageHandlers = {
     'identify': (clientId, messageData) => {
@@ -55,7 +54,18 @@ const messageHandlers = {
     'chat-message': (clientId, messageData) => {
         let name = nameByClientId[clientId] ?? 'Unknown Client';
         trafficController.broadcast('chat-message', {name: name, text: messageData.text});
-    }
+    },
+    'map': (clientId, messageData, responder) => {
+        responder(gameMap);
+    },
+    'color-tile': (clientId, messageData) => {
+        let name = nameByClientId[clientId] ?? 'Unknown Client';
+        let tileId = messageData.tileId;
+        let color = messageData.color;
+        gameMap.tiles[tileId].color = color;
+
+        trafficController.broadcast('color-tile', {name, tileId, color});
+    },
 }
 
 //Set up the websocket connection.
@@ -68,10 +78,15 @@ app.ws('/', (ws, req) => {
 });
 
 //Set up the server to use static files from the 'client' directory.
-app.use(express.static('client'));
+app.use(express.static('source/client'));
+
+app.get('/', (req, res) => {
+    res.sendFile('source/client/index.html');
+});
 
 app.get('/shaders', (req, res) => {
-    let data = catalogDirectory('client/renderer/shaders', 'glsl');
+    let data = catalogDirectory('source/client/renderer/shaders', 'glsl');
+    console.log({data});
     res.send(JSON.stringify(data));
 });
 

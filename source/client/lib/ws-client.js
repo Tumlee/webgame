@@ -1,5 +1,3 @@
-//import * as WebSocket from 'ws';
-
 //The purpose of this wsclient object is to contain an asynchronous way of processing
 //messages from, and sending messages to, the web socket server, regardless of any
 //timing issue that may occur.
@@ -29,15 +27,12 @@ export class WsClient {
         this.lastOutTime = Date.now();
         this.outRateMS = 200;
         this.incomingMessageHandler = null;
-        //this.logger = new Logger('wsClient');
     }
 
     ensureProcessing() {
         if(!this.isProcessing) {
             this.isProcessing = true;
             this.process();
-        } else {
-            //this.logger.info('wsClient is already processing');
         }
     }
 
@@ -59,7 +54,6 @@ export class WsClient {
             if(elapsed < this.outRateMS) {
                 //Have to wait...
                 let waitTime = (this.outRateMS - elapsed);
-                //this.logger.info('Waiting ' + waitTime + 'ms before processing next outQueue item');
                 this.isProcessing = false;
                 setTimeout(() => this.ensureProcessing(), waitTime);
                 return;
@@ -81,12 +75,10 @@ export class WsClient {
     handleOutgoing(message) {
         if(message.isValid && !message.isValid()) {
             //Message no longer valid, call onInvalid.
-            //this.logger.warning('Message invalid', {message});
             message.onInvalid && message.onInvalid();
             return;
         }
 
-        //this.logger.info('Sending message', {message});
         this.websocket.send(message);
     }
 
@@ -96,7 +88,6 @@ export class WsClient {
     }
 
     sendMessage(message) {
-        //this.logger.info('Queueing outgoing', {message});
         this.outQueue.push(message);
         this.ensureProcessing();
     }
@@ -107,7 +98,6 @@ export class WsClient {
         return new Promise((resolve, reject) => {
             this.websocket = new WebSocket(uri);
             this.websocket.onopen = event => {
-                //this.logger.info('Connection established', {event});
                 this.isConnected = true;
 
                 if(functions.onMessage)
@@ -117,8 +107,6 @@ export class WsClient {
             }
     
             this.websocket.onclose = event => {
-                //this.logger.info('Connection closed', {event});
-
                 if(functions.onClose)
                     functions.onClose(event);
 
@@ -126,20 +114,14 @@ export class WsClient {
             }
 
             this.websocket.onmessage = event => {
-                //this.logger.info('Queueing event', {event});
                 this.inQueue.push(event);
                 this.ensureProcessing();
             }
 
             this.websocket.onerror = event => {
-                //this.logger.info('Error received', {event});
                 if(functions.onError)
                     functions.onError(event);
             }
         });
     }
-
-    /*setIncomingMessageHandler(handler) {
-        this.incomingMessageHandler = handler;
-    }*/
 };

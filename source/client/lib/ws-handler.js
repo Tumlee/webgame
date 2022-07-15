@@ -56,7 +56,8 @@ export class WsHandler {
                     let messageStr = messageEvent.data;
                     this.handleMessage(JSON.parse(messageStr));
                 } catch(handleMessageError) {
-                    console.log({handleMessageError}, {messageStr});
+                    console.log({handleMessageError});
+                    console.log(messageEvent.data);
                 }
             },
             onError: event => {
@@ -84,7 +85,8 @@ export class WsHandler {
             data: messageData
         };
 
-        console.log('SENDING', {packet});
+        if(packet.type != 'ping')
+            console.log('SENDING', {packet});
 
         //Increment the sequence number.
         this.sequenceId = this.sequenceId + 1;
@@ -93,8 +95,8 @@ export class WsHandler {
 
     sendRequest(type, messageData) {
         return new Promise((resolve, reject) => {
-            this.sendMessage(type, messageData);
             let seqId = this.sequenceId;
+            this.sendMessage(type, messageData);
 
             this.pendingRequests[seqId] = responseData => {
                 delete this.pendingRequests[seqId];
@@ -104,7 +106,7 @@ export class WsHandler {
             setTimeout(() => {
                 if(this.pendingRequests[seqId] != null) {
                     console.log(`Warning! Response timed out for request ${seqId}`, messageData);
-                    delete this.pendingRequests[seqNum];
+                    delete this.pendingRequests[seqId];
                     reject();
                 }
             }, 2000);
@@ -112,20 +114,22 @@ export class WsHandler {
     }
 
     handleMessage(wrappedMessage) {
-        console.log('RECEIVED', {wrappedMessage});
+        if(wrappedMessage.type != 'ping')
+            console.log('RECEIVED', {wrappedMessage});
+            
         let type = wrappedMessage.type;
         let timestamp = wrappedMessage.timestamp;
         let responseId = wrappedMessage.responseId;
         let messageData = wrappedMessage.data;
-        let seqId = wrappedMessage.seqId;
+        let seqId = wrappedMessage.sequenceId;
 
-        if(responseId) {
-            let callback = this.pendingRequets[responseId];
+        if(responseId != null) {
+            let callback = this.pendingRequests[responseId];
 
             if(callback) {
                 callback(messageData);
             } else {
-                console.log(`Warning! Received response for ${responseID} but it's not in the pending requests list.`);
+                console.log(`Warning! Received response for ${responseId} but it's not in the pending requests list.`);
             }
         } else {
             let messageHandler = this.messageHandlers[type];
