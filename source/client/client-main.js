@@ -131,7 +131,11 @@ function randomElement(array) {
 }
 
 function getLocalVar(varName) {
-    return localStorage.getItem(`webgame-${varName}`);
+    try {
+        return localStorage.getItem(`webgame-${varName}`);
+    } catch(error) {
+        return null;
+    }
 }
 
 function setLocalVar(varName, value) {

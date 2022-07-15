@@ -1,8 +1,17 @@
 let logMessages = [];
 
-export function logMessage(data) {
-    console.log(data);
-    logMessages.push(transformMessageData(data));
+export function logMessage(data0, data1, data2) {
+    if(data1 == null && data2 == null)
+        console.log(data0);
+    else if(data2 == null)
+        console.log(data0, data1);
+    else 
+        console.log(data0, data1, data2);
+
+    for(const data of [data0, data1, data2]) {
+        if(data != null)
+            logMessages.push(transformMessageData(data));
+    }
 }
 
 export function getLogMessages() {
