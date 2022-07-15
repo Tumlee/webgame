@@ -28,14 +28,22 @@ function hexToRgb(hex) {
     } : null;
   }
 
+let basicStep = null;
+
 function clientMain() {
     //Set up the Websocket handler.
     let wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
     let wsAddress = `${wsProtocol}//${window.location.hostname}:${location.port}/`;
     let handler = new WsHandler(wsAddress);
     let gameConsole = new GameConsole();
-    //let gameMap = new GameMap();
     let camera = new Camera(canvasWidth, canvasHeight);
+    let renderer = new Renderer(gameConsole, canvasWidth, canvasHeight);
+
+    //Attach stuff to the main window.
+    let mainElement = id => document.getElementById(id);
+    let mainWindow = mainElement('mainWindow');
+    mainWindow.appendChild(renderer.getCanvas());
+    mainWindow.appendChild(gameConsole.getContainer());
 
     camera.precomputeRenderingVars();
 
@@ -52,7 +60,7 @@ function clientMain() {
             return;
         
         if(text.startsWith('/')) {
-            handleConsoleCommand(gameConsole, handler, text.substr(1));
+            handleConsoleCommand(gameConsole, handler, text.substr(1), camera, renderer);
         } else {
             if(handler.isConnected())
                 handler.sendMessage('chat-message', {text: text});
@@ -68,22 +76,15 @@ function clientMain() {
         handler.openConnection(() => {
             gameConsole.info(`You are now connected! Identifying as ${autoconnectName}...`);
             handler.sendMessage('identify', {name: autoconnectName});
+            mapMain(handler, renderer, camera, gameConsole);
         });
     } else {
         gameConsole.info('To connect to the server, type /connect [name]');
         gameConsole.info('To automatically connect every time the page loads, type /autoconnect [name]');
     }
+}
 
-    let mainElement = id => document.getElementById(id);
-    let mainWindow = mainElement('mainWindow');
-
-    //Set up the renderer.
-    let renderer = new Renderer(gameConsole, canvasWidth, canvasHeight);
-    let basicStep = null;
-
-    mainWindow.appendChild(renderer.getCanvas());
-    mainWindow.appendChild(gameConsole.getContainer());
-
+function mapMain(handler, renderer, camera, gameConsole) {
     requestInitialMap(handler).then(gameMap => {
         handler.setMessageHandler('color-tile', messageData => {
             let tile = gameMap.tiles[messageData.tileId];
@@ -167,7 +168,7 @@ function getMousePos(canvas, evt) {
     };
 }
 
-function handleConsoleCommand(gameConsole, wsHandler, text) {
+function handleConsoleCommand(gameConsole, wsHandler, text, camera, renderer) {
     let tokens = splitArgs(text);
 
     if(tokens.length == 0)
@@ -183,6 +184,7 @@ function handleConsoleCommand(gameConsole, wsHandler, text) {
                 wsHandler.openConnection(() => {
                     gameConsole.info(`You are now connected! Identifying as ${args.name}...`);
                     wsHandler.sendMessage('identify', {name: args.name});
+                    mapMain(wsHandler, renderer, camera, gameConsole);
                 });
             }
         },
@@ -193,6 +195,7 @@ function handleConsoleCommand(gameConsole, wsHandler, text) {
                 wsHandler.openConnection(() => {
                     gameConsole.info(`You are now connected! Identifying as ${args.name}...`);
                     wsHandler.sendMessage('identify', {name: args.name});
+                    mapMain(wsHandler, renderer, camera, gameConsole);
 
                     setLocalVar('autoconnect-name', args.name);
                     gameConsole.info('You will now automatically connect with this name every time.');

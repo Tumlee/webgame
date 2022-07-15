@@ -1,3 +1,5 @@
+import { logMessage } from "./logs.js";
+
 export class Client {
     constructor(clientId, ws) {
         this.clientId = clientId;
@@ -15,7 +17,7 @@ export class Client {
                 let wrappedMessage = JSON.parse(messageStr);
                 this.handleMessage(wrappedMessage);
             } catch(onMessageError) {
-                console.log(`Error processing message for client (${this.clientId})`, {onMessageError}, {messageStr});
+                logMessage(`Error processing message for client (${this.clientId})`, {onMessageError}, {messageStr});
             }
         });
 
@@ -55,7 +57,7 @@ export class Client {
 
         this.resetPingInterval();
         this.resetTimeoutInterval();
-        console.log(`Client with ID (${this.clientId}) has connected`);
+        logMessage(`Client with ID (${this.clientId}) has connected`);
         this.isConnected = true;
     }
 
@@ -63,7 +65,7 @@ export class Client {
         if(!this.isConnected)   //Already disconnected, do nothing.
             return;
 
-        console.log(`Client with ID (${this.clientId}) has disconnected.`);
+        logMessage(`Client with ID (${this.clientId}) has disconnected.`);
         this.isConnected = false;
     }
 
@@ -79,7 +81,7 @@ export class Client {
             packet.responseId = responseId;
 
         if(type != 'ping')
-            console.log(`Sending to (${this.clientId})`, {packet});
+            logMessage(`Sending to (${this.clientId})`, {packet});
 
         this.ws.send(JSON.stringify(packet));
         this.sequenceId = this.sequenceId + 1;
@@ -97,7 +99,7 @@ export class Client {
 
             setTimeout(() => {
                 if(this.pendingRequests[seqId] != null) {
-                    console.log(`Warning! Response timed out for request ${seqId}`, messageData);
+                    logMessage(`Warning! Response timed out for request ${seqId}`, messageData);
                     delete this.pendingRequests[seqNum];
                     reject();
                 }
@@ -113,7 +115,7 @@ export class Client {
         let seqId = wrappedMessage.sequenceId;
 
         if(type != 'ping')
-            console.log(`Recieved from (${this.clientId})`, {wrappedMessage});
+        logMessage(`Recieved from (${this.clientId})`, {wrappedMessage});
 
         if(responseId) {
             let callback = this.pendingRequets[responseId];
@@ -121,13 +123,13 @@ export class Client {
             if(callback) {
                 callback(messageData);
             } else {
-                console.log(`Warning! Received response for ${responseID} but it's not in the pending requests list.`);
+                logMessage(`Warning! Received response for ${responseID} but it's not in the pending requests list.`);
             }
         } else {
             let messageHandler = this.messageHandlers[type];
 
             if(messageHandler == null) {
-                console.log(`No message handler for message type: ${type}`);
+                logMessage(`No message handler for message type: ${type}`);
                 return;
             }
       
@@ -140,7 +142,7 @@ export class Client {
     }
 
     handleTimeout() {
-        console.log(`Client with ID (${this.clientId}) seems to have timed out.`);
+        logMessage(`Client with ID (${this.clientId}) seems to have timed out.`);
     }
 
     setMessageHandler(id, func) {

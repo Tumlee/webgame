@@ -2,8 +2,10 @@ import express from 'express';
 import expressWs from 'express-ws';
 import * as pg from 'pg';
 import { GameMap } from './game-map.js';
+import { getLogMessages, logMessage } from './logs.js';
 import { TrafficController } from './traffic-controller.js';
 import { catalogDirectory } from './util/file-util.js';
+
 //import WebSocket, {WebSocketServer} from 'ws';
 //import https from 'https';
 
@@ -73,7 +75,7 @@ app.ws('/', (ws, req) => {
     try {
         trafficController.registerClient(ws, req, messageHandlers);
     } catch(error) {
-        console.log({error});
+        log({error});
     }
 });
 
@@ -86,13 +88,20 @@ app.get('/', (req, res) => {
 
 app.get('/shaders', (req, res) => {
     let data = catalogDirectory('source/client/renderer/shaders', 'glsl');
-    console.log({data});
-    res.send(JSON.stringify(data));
+    logMessage({data});
+    res.set('Content-Type', 'text/json');
+    res.send(data);
+});
+
+app.get('/logs', (req, res) => {
+    let logText = getLogMessages().join('\n');
+    res.set('Content-Type', 'text/plain; charset=us-ascii');
+    res.send(logText);
 });
 
 //Set up the app to listen on port 8080.
 const port = parseInt(process.env.PORT) || 8080;
 
 app.listen(port, () => {
-    console.log(`http://localhost:${port}`);
+    logMessage(`http://localhost:${port}`);
 });
