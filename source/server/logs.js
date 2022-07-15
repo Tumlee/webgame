@@ -12,6 +12,9 @@ export function logMessage(data0, data1, data2) {
         if(data != null)
             logMessages.push(transformMessageData(data));
     }
+
+    while(logMessages.length > 50)
+        logMessages.shift();
 }
 
 export function getLogMessages() {
