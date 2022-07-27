@@ -10,8 +10,8 @@ const canvasHeight = 600;
 function requestInitialMap(wsHandler) {
     let map = new GameMap();
 
-    return wsHandler.sendRequest('map', {}).then(response => {
-        for(const tile of Object.values(response.tiles)) {
+    return wsHandler.sendRequest('gamestate', {}).then(response => {
+        for(const tile of Object.values(response.map.tiles)) {
             map.setTile(tile.c, tile.r, tile.h, tile.color);
         }
 
@@ -51,8 +51,24 @@ function clientMain() {
         gameConsole.info(`${data.name} has connected to the server.`);
     });
 
+    handler.setMessageHandler('disconnect-notice', data => {
+        gameConsole.info(`${data.name} has disconnected.`);
+    });
+
     handler.setMessageHandler('chat-message', data => {
         gameConsole.chat(`[${data.name}] ${data.text}`);
+    });
+
+    handler.setMessageHandler('user-joined', data => {
+        gameConsole.info(`${data.id} has joined the game.`);
+    });
+
+    handler.setMessageHandler('user-left', data => {
+        gameConsole.info(`${data.id} has left the game.`);
+    });
+
+    handler.setMessageHandler('current-user', data => {
+        gameConsole.info(`It is now ${data.id}'s turn.`);
     });
 
     gameConsole.setInputCallback(text => {
@@ -106,16 +122,13 @@ function mapMain(handler, renderer, camera, gameConsole) {
             if(result && result.subId == 'floor') {
                 let color = hexToRgb(gameConsole.getColor());
                 handler.sendMessage('color-tile', {tileId: result.id, color: color});
-                //gameMap.tiles[result.id].color = color;
-                //gameMap.draw(basicStep, camera);
-                //renderer.render();
             }
         });
     
         renderer.init().then(() => {
             basicStep = renderer.addRenderingStep('basic');
     
-            handler.sendRequest('map', {}).then(response => {
+            handler.sendRequest('gamestate', {}).then(response => {
                 console.log({response});
             });
         
@@ -204,6 +217,18 @@ function handleConsoleCommand(gameConsole, wsHandler, text, camera, renderer) {
                     setLocalVar('autoconnect-name', args.name);
                     gameConsole.info('You will now automatically connect with this name every time.');
                 });
+            }
+        },
+        join: {
+            description: 'Join the game.',
+            execute(args) {
+                wsHandler.sendMessage('join-game', {});
+            }
+        },
+        leave: {
+            description: 'Leave the game and continue as a spectator.',
+            execute(args) {
+                wsHandler.sendMessage('leave-game', {});
             }
         },
         help: {

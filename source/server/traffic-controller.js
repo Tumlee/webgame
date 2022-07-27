@@ -17,6 +17,8 @@ export class TrafficController {
             let handlerFunc = messageHandlers[handlerId];
             this.clients[clientId].setMessageHandler(handlerId, (messageData, responder) => handlerFunc(clientId, messageData, responder));
         }
+
+        return this.clients[clientId];
     }
 
     getAllClients() {

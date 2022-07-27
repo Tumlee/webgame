@@ -8,6 +8,7 @@ export class Client {
         this.pingInterval = null;
         this.timeoutInterval = null;
         this.pendingRequests = {};
+        this.disconnectHandler = null;
         this.messageHandlers = {
             ping: data => this.resetTimeoutInterval()
         };
@@ -21,7 +22,11 @@ export class Client {
             }
         });
 
-        this.ws.on('close', () => this.handleDisconnect());
+        this.ws.on('close', () => {
+            this.cancelTimeoutInterval();
+            this.cancelPingInterval();
+            this.handleDisconnect()
+        });
         this.handleConnect();
     }
 
@@ -67,6 +72,9 @@ export class Client {
 
         logMessage(`Client with ID (${this.clientId}) has disconnected.`);
         this.isConnected = false;
+
+        if(this.disconnectHandler != null)
+            this.disconnectHandler();
     }
 
     sendMessage(type, messageData, responseId) {
@@ -143,9 +151,14 @@ export class Client {
 
     handleTimeout() {
         logMessage(`Client with ID (${this.clientId}) seems to have timed out.`);
+        this.ws.close(-101, 'No pings were sent to the server for 10 seconds.');
     }
 
     setMessageHandler(id, func) {
         this.messageHandlers[id] = func;
+    }
+
+    setDisconnectHandler(func) {
+        this.disconnectHandler = func;
     }
 }
