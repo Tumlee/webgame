@@ -9,23 +9,41 @@ body, html {
 #mainWindow {
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: stretch;
     justify-content: center;
     height: 100vh;
 }
 
-#loginNameDiv {
-    display: inline-flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    padding: 16px;
-    background-image: linear-gradient(#668, #445);
-    border-radius: 16px;
+.main-upper-section {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    justify-content: space-around;
+    padding: 32px;
+    gap: 32px;
 }
 
-#loginNameBox {
-    text-align: center;
+.main-side-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: left;
+    gap: 8px;
+}
+
+.main-info-panel {
+    padding: 20px;
+    background-image: linear-gradient(#444, #333);
+    border-radius: 16px;
+    flex: 1;
+}
+
+.main-prompt-panel {
+    padding: 20px;
+    background-image: linear-gradient(#444, #333);
+    border-radius: 16px;
+    flex: 1;
 }
 
 /*Console stuff*/

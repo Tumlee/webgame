@@ -1,5 +1,6 @@
 import { Camera } from './camera.js';
 import { GameMap } from './game-map.js';
+import { newElement } from './lib/dom-util.js';
 import { GameConsole } from './lib/game-console.js';
 import { WsHandler } from './lib/ws-handler.js';
 import { Renderer } from './renderer/renderer.js';
@@ -42,7 +43,16 @@ function clientMain() {
     //Attach stuff to the main window.
     let mainElement = id => document.getElementById(id);
     let mainWindow = mainElement('mainWindow');
-    mainWindow.appendChild(renderer.getCanvas());
+    let upperSection = newElement('div', {class: 'main-upper-section'});
+    let sidePanel = newElement('div', {class: 'main-side-panel'});
+    let infoPanel = newElement('div', {class: 'main-info-panel', text: 'INFO'});
+    let promptPanel = newElement('div', {class: 'main-prompt-panel', text: 'PROMPT'});
+
+    sidePanel.appendChild(infoPanel);
+    sidePanel.appendChild(promptPanel);
+    upperSection.appendChild(renderer.getCanvas());
+    upperSection.appendChild(sidePanel);
+    mainWindow.appendChild(upperSection);
     mainWindow.appendChild(gameConsole.getContainer());
 
     camera.precomputeRenderingVars();
